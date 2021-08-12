@@ -1,6 +1,4 @@
-package main
-
-type Code int64
+package spec
 
 type Event struct {
 	Head  Header

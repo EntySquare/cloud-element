@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"enty/clouder-sealer/spec"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/nats-io/stan.go"
 	"io/ioutil"
@@ -12,7 +13,8 @@ import (
 	"time"
 )
 
-var natsUrl string
+var natsUrl, taskType, minerIDStr string
+var sectorNumber uint64
 var errLog = logging.Logger("ERROR")
 
 func main() {
@@ -59,21 +61,21 @@ func RandString(len int) string {
 	return string(bytes)
 }
 
-func ReadFile() string {
+func ReadFile() {
 	file, err := os.Open("c2_event.json")
 	if err != nil {
 		panic(err)
 	}
 	defer file.Close()
-	var event = Event{}
+	var event = spec.Event{}
 	buf, _ := ioutil.ReadAll(file)
 	err = json.Unmarshal(buf, &event)
 	bin, err := json.Marshal(event)
 	if err != nil {
-		sendError(spec.JSON_MARSHAL_ERR, err, taskTyp)
+		sendError(spec.JSON_MARSHAL_ERR, err, taskType)
 		return
 	}
-	return txt
+	SendEvent(spec.MinerTopicSealerDone(minerIDStr), bin)
 }
 
 func sendError(code spec.Code, err error, msgType string) {
