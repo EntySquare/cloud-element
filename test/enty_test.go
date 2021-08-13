@@ -52,7 +52,7 @@ func Test1(t *testing.T) {
 			fmt.Println(err)
 		}
 	})
-	http.ListenAndServe("localhost:9999", nil)
+	_ = http.ListenAndServe("localhost:9999", nil)
 }
 
 type FetchParams struct {
