@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"enty/clouder-element/types"
+	"enty/clouder-element/spec"
 	"fmt"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/nats-io/stan.go"
