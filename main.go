@@ -2,14 +2,13 @@ package main
 
 import (
 	"encoding/json"
-	"enty/clouder-element/spec"
+	"enty/clouder-element/types"
+	"fmt"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/nats-io/stan.go"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"os"
-	"strconv"
 	"time"
 )
 
@@ -18,21 +17,41 @@ var sectorNumber uint64
 var errLog = logging.Logger("ERROR")
 
 func main() {
+	if err := ExtendEnv(); err != nil {
+		if err = ReadFileEnv("env.json"); err != nil {
+			panic("env err!")
+		}
+	}
+	ReadFileLaterSendEvent("c2_event.json")
 	log.Println("run main success")
+}
+func ReadFileLaterSendEvent(dirFile string) {
+	file, err := os.Open(dirFile) //c2_event.json
+	if err != nil {
+		fmt.Println("[cloud-element] open file err:" + err.Error())
+		sendError(spec.JSON_MARSHAL_ERR, err, taskType)
+		return
+	}
+	defer file.Close()
+	var event = spec.Event{}
+	buf, _ := ioutil.ReadAll(file)
+	err = json.Unmarshal(buf, &event)
+	bin, err := json.Marshal(event)
+	if err != nil {
+		fmt.Println("[cloud-element] json marshal err:" + err.Error())
+		sendError(spec.JSON_MARSHAL_ERR, err, taskType)
+		return
+	}
+	fmt.Println("[cloud-element] run SendEvent:" + minerIDStr)
+	fmt.Println(fmt.Sprintf("[cloud-element] event:\n %+v", bin))
+	SendEvent(spec.MinerTopicSealerDone(minerIDStr), bin)
 }
 
 func SendEvent(sbj string, src []byte) {
 
-	natsStr, ok := os.LookupEnv("NATS_SERVER")
-	if !ok {
-		natsUrl = "http://localhost:4222"
-	} else {
-		natsUrl = natsStr
-	}
-
 	log.Println("send event to miner subject is : ", sbj)
 	// Connect to a server
-	nc, err := stan.Connect("knative-nats-streaming", RandString(15), stan.NatsURL(natsUrl))
+	nc, err := stan.Connect("knative-nats-streaming", spec.RandString(15), stan.NatsURL(natsUrl))
 	if err != nil {
 		log.Println("send event connection error : ", err)
 		SendEvent(sbj, src)
@@ -51,40 +70,13 @@ func SendEvent(sbj string, src []byte) {
 	nc.Close()
 }
 
-func RandString(len int) string {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	bytes := make([]byte, len)
-	for i := 0; i < len; i++ {
-		b := r.Intn(26) + 65
-		bytes[i] = byte(b)
-	}
-	return string(bytes)
-}
-
-func ReadFile() {
-	file, err := os.Open("c2_event.json")
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-	var event = spec.Event{}
-	buf, _ := ioutil.ReadAll(file)
-	err = json.Unmarshal(buf, &event)
-	bin, err := json.Marshal(event)
-	if err != nil {
-		sendError(spec.JSON_MARSHAL_ERR, err, taskType)
-		return
-	}
-	SendEvent(spec.MinerTopicSealerDone(minerIDStr), bin)
-}
-
 func sendError(code spec.Code, err error, msgType string) {
 
 	errLog.Errorf(msgType+"_ERROR:%+v", err)
 	event := spec.Event{
 		Head: spec.Header{
 			MsgTyp:    msgType,
-			SectorNum: Uint64ToString(sectorNumber),
+			SectorNum: spec.Uint64ToString(sectorNumber),
 		},
 		Body:  nil,
 		Error: spec.NewFiltabErr(code, err).ToString(),
@@ -99,6 +91,71 @@ func sendError(code spec.Code, err error, msgType string) {
 	SendEvent(spec.MinerTopicSealerDone(minerIDStr), bin)
 }
 
-func Uint64ToString(i uint64) string {
-	return strconv.FormatUint(i, 10)
+func ExtendEnv() error {
+	natsStr, ok := os.LookupEnv("NATS_SERVER")
+	if !ok {
+		natsUrl = "http://localhost:4222"
+	} else {
+		natsUrl = natsStr
+	}
+
+	tt, ok := os.LookupEnv("TASK_TYPE")
+	if !ok {
+		return fmt.Errorf("extendEnv TASK_TYPE is null")
+	} else {
+		taskType = tt
+	}
+
+	sID, ok := os.LookupEnv("SECTOR_MINER_ID")
+	if !ok {
+		return fmt.Errorf("extendEnv SECTOR_MINER_ID is null")
+	} else {
+		minerIDStr = sID
+		//sectorMinerID = StrToUInt64(sID)
+	}
+
+	sNum, ok := os.LookupEnv("SECTOR_NUMBER")
+	if !ok {
+		sectorNumber = spec.StrToUInt64("0")
+	} else {
+		sectorNumber = spec.StrToUInt64(sNum)
+	}
+	return nil
+}
+
+func ReadFileEnv(dirFile string) error {
+	file, err := os.Open(dirFile) //c2_event.json
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	buf, _ := ioutil.ReadAll(file)
+	var maps = make(map[string]interface{})
+	if err = json.Unmarshal(buf, &maps); err != nil {
+		return err
+
+	}
+	if v, ok := maps["natsUrl"]; ok {
+		natsUrl = v.(string)
+	} else {
+		return fmt.Errorf("file natsUrl is null")
+	}
+
+	if v, ok := maps["taskType"]; ok {
+		taskType = v.(string)
+	} else {
+		return fmt.Errorf("file taskType is null")
+	}
+
+	if v, ok := maps["minerIDStr"]; ok {
+		minerIDStr = v.(string)
+	} else {
+		return fmt.Errorf("file minerIDStr is null")
+	}
+	if v, ok := maps["sectorNumber"]; ok {
+		sectorNumber = v.(uint64)
+	} else {
+		return fmt.Errorf("file sectorNumber is null")
+	}
+	return nil
 }
