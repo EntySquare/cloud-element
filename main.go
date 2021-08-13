@@ -55,6 +55,7 @@ func SendEvent(sbj string, src []byte) {
 	nc, err := stan.Connect("knative-nats-streaming", spec.RandString(15), stan.NatsURL(natsUrl))
 	if err != nil {
 		log.Println("send event connection error : ", err)
+		time.Sleep(time.Second * 3)
 		SendEvent(sbj, src)
 		return
 	}
@@ -63,6 +64,7 @@ func SendEvent(sbj string, src []byte) {
 	err = nc.Publish(sbj, src)
 	if err != nil {
 		log.Println("send event publish error : ", err)
+		time.Sleep(time.Second * 3)
 		SendEvent(sbj, src)
 		return
 	}
