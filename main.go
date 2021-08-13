@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -92,38 +93,26 @@ func sendError(code spec.Code, err error, msgType string) {
 }
 
 func ReadFileEnv(dirFile string) error {
+	type Env struct {
+		NatsUrl      string `json:"natsUrl"`
+		TaskType     string `json:"taskType"`
+		MinerIDStr   int    `json:"minerIDStr"`
+		SectorNumber uint64 `json:"sectorNumber"`
+	}
 	file, err := os.Open(dirFile) //c2_event.json
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 	buf, _ := ioutil.ReadAll(file)
-	var maps = make(map[string]interface{})
-	if err = json.Unmarshal(buf, &maps); err != nil {
+	var env = Env{}
+	if err = json.Unmarshal(buf, &env); err != nil {
 		return err
-
 	}
-	if v, ok := maps["natsUrl"]; ok {
-		natsUrl = v.(string)
-	} else {
-		return fmt.Errorf("file natsUrl is null")
-	}
-
-	if v, ok := maps["taskType"]; ok {
-		taskType = v.(string)
-	} else {
-		return fmt.Errorf("file taskType is null")
-	}
-
-	if v, ok := maps["minerIDStr"]; ok {
-		minerIDStr = v.(string)
-	} else {
-		return fmt.Errorf("file minerIDStr is null")
-	}
-	if v, ok := maps["sectorNumber"]; ok {
-		sectorNumber = v.(uint64)
-	} else {
-		return fmt.Errorf("file sectorNumber is null")
-	}
+	fmt.Println(env)
+	natsUrl = env.NatsUrl
+	minerIDStr = strconv.Itoa(env.MinerIDStr)
+	taskType = env.TaskType
+	sectorNumber = env.SectorNumber
 	return nil
 }
