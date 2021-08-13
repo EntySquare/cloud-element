@@ -17,14 +17,14 @@ var sectorNumber uint64
 var errLog = logging.Logger("ERROR")
 
 func main() {
-	if err := ExtendEnv(); err != nil {
-		if err = ReadFileEnv("env.json"); err != nil {
-			panic("env err!")
-		}
+
+	if err := ReadFileEnv("../env.json"); err != nil {
+		panic("env err!")
 	}
-	ReadFileLaterSendEvent("c2_event.json")
+	ReadFileLaterSendEvent("../c2_event.json")
 	log.Println("run main success")
 }
+
 func ReadFileLaterSendEvent(dirFile string) {
 	file, err := os.Open(dirFile) //c2_event.json
 	if err != nil {
@@ -89,38 +89,6 @@ func sendError(code spec.Code, err error, msgType string) {
 		return
 	}
 	SendEvent(spec.MinerTopicSealerDone(minerIDStr), bin)
-}
-
-func ExtendEnv() error {
-	natsStr, ok := os.LookupEnv("NATS_SERVER")
-	if !ok {
-		natsUrl = "http://localhost:4222"
-	} else {
-		natsUrl = natsStr
-	}
-
-	tt, ok := os.LookupEnv("TASK_TYPE")
-	if !ok {
-		return fmt.Errorf("extendEnv TASK_TYPE is null")
-	} else {
-		taskType = tt
-	}
-
-	sID, ok := os.LookupEnv("SECTOR_MINER_ID")
-	if !ok {
-		return fmt.Errorf("extendEnv SECTOR_MINER_ID is null")
-	} else {
-		minerIDStr = sID
-		//sectorMinerID = StrToUInt64(sID)
-	}
-
-	sNum, ok := os.LookupEnv("SECTOR_NUMBER")
-	if !ok {
-		sectorNumber = spec.StrToUInt64("0")
-	} else {
-		sectorNumber = spec.StrToUInt64(sNum)
-	}
-	return nil
 }
 
 func ReadFileEnv(dirFile string) error {
