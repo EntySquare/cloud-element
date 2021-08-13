@@ -55,6 +55,10 @@ func Test1(t *testing.T) {
 		if err != nil {
 			fmt.Println(err)
 		}
+		fmt.Println(pr.SectorNum)
+		fmt.Println(pr.TaskType)
+		fmt.Println(len(pr.Body))
+		fmt.Println(string(pr.Body))
 	})
 	_ = http.ListenAndServe("localhost:9999", nil)
 }
