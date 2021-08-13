@@ -18,10 +18,10 @@ var errLog = logging.Logger("ERROR")
 
 func main() {
 
-	if err := ReadFileEnv("../env.json"); err != nil {
+	if err := ReadFileEnv("./env.json"); err != nil {
 		panic("env err!")
 	}
-	ReadFileLaterSendEvent("../c2_event.json")
+	ReadFileLaterSendEvent("./c2_event.json")
 	log.Println("run main success")
 }
 
