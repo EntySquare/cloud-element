@@ -4,7 +4,7 @@ ENV GO111MODULE on
 USER root
 WORKDIR /root
 
-COPY . .
+COPY . /cloud-element
 COPY go.mod go.sum ./
 RUN go mod download
-RUN go build
+RUN apt-get update && apt-get install -y libhwloc-dev && go build
