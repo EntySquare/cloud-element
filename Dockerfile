@@ -4,6 +4,7 @@ ENV GO111MODULE on
 USER root
 WORKDIR /root
 
-ADD ../cloud-element .
+COPY . .
 COPY go.mod go.sum ./
 RUN go mod download
+RUN go build
