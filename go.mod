@@ -1,4 +1,4 @@
-module enty/clouder-element
+module enty/cloud-sealer-sidecar
 
 go 1.14
 
